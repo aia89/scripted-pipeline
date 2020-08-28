@@ -14,7 +14,7 @@ if (nodeIP?.trim()) {
                 stage("Install Apache"){
                     sh '''
                         export ANSIBLE_HOST_KEY_CHECKING=False
-                        ansible-playbook -i "104.131.110.132," --private-key $SSHKEY main.yml
+                        ansible-playbook -i "68.183.114.230," --private-key $SSHKEY main.yml
                         '''
                 }
             }
