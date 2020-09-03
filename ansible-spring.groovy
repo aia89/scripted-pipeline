@@ -6,23 +6,27 @@ properties([
 if (nodeIP.length() > 6) {
     node {
         stage('Pull Repo') {
-            git branch: 'master', changelog: false, poll: false, url: 'https://github.com/ikambarov/spring-petclinic.git'
+            git branch: 'master', changelog: false, poll: false, url: 'https://github.com/ksalrin/anisble-springpetclinic.git'
         }
-        withCredentials([sshUserPrivateKey(credentialsId: 'jenkins-master-ssh-key', keyFileVariable: 'SSHKEY', passphraseVariable: '', usernameVariable: 'SSHUSERNAME')]) {
-            stage("Install Apache"){
-                sh '''
-                    export ANSIBLE_HOST_KEY_CHECKING=False
-                    ansible-galaxy -i "157.245.84.190," --private-key $SSHKEY install gantsign.maven
-                    '''
-            stage("Install Maven"){
-                sh 'ssh -o StrictHostKeyChecking=no -i $SSHKEY $SSHUSERNAME@${nodeIP} ansible-galaxy install gantsign.maven'
-            }
-            stage("Install Java"){
-                sh 'ssh -o StrictHostKeyChecking=no -i $SSHKEY $SSHUSERNAME@${nodeIP} ansible-galaxy install gantsign.java'
-            }
+        withEnv(['ANSIBLE_HOST_KEY_CHECKING=False', 'SPRINGPETCLINIC_REPO=https://github.com/ikambarov/spring-petclinic.git', 'SPRINGPETCLINIC_BRANCH=master']) {
+            stage("Install Prerequisites"){
+                ansiblePlaybook credentialsId: 'jenkins-master-ssh-key', inventory: '${nodeIP},', playbook: 'prerequisites.yml'
+                }
+            stage("Pull SpringPetClinic"){
+                ansiblePlaybook credentialsId: 'jenkins-master-ssh-key', inventory: '${nodeIP},', playbook: 'pull_repo.yml'
+                }
+            stage("Install java"){
+                ansiblePlaybook credentialsId: 'jenkins-master-ssh-key', inventory: '${nodeIP},', playbook: 'install_java.yml'
+                }
+            stage("Install maven"){
+                ansiblePlaybook credentialsId: 'jenkins-master-ssh-key', inventory: '${nodeIP},', playbook: 'install_maven.yml'
+                }
+            stage("Start SpringPetClinic"){
+                ansiblePlaybook credentialsId: 'jenkins-master-ssh-key', inventory: '${nodeIP},', playbook: 'start_app.yml'
+                }
         }  
     }
-
+}
 else {
     error 'Please enter valid IP address'
 }
